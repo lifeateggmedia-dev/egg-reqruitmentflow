@@ -88,14 +88,12 @@ function AnalyticsContent() {
         </CardContent>
       </Card>
 
-      {detailSheet && (
-        <AnalyticsDetailSheet
-          open={!!detailSheet}
-          onOpenChange={(open) => !open && setDetailSheet(null)}
-          label={detailSheet.label}
-          statuses={detailSheet.statuses}
-        />
-      )}
+      <AnalyticsDetailSheet
+        open={!!detailSheet}
+        onOpenChange={(open) => !open && setDetailSheet(null)}
+        label={detailSheet?.label ?? ""}
+        statuses={detailSheet?.statuses ?? []}
+      />
     </div>
   );
 }
