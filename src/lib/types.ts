@@ -89,8 +89,10 @@ export interface AnalyticsSummary {
   waiting: number;
   in_session_1: number;
   in_session_2: number;
+  pending: number;
   passed: number;
   failed: number;
+  finished: number;
   avg_wait_minutes: number;
   avg_interview_minutes: number;
   daily_counts: { date: string; count: number }[];

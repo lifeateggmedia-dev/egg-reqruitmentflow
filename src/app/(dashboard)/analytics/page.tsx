@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAnalyticsSummary } from "@/lib/supabase/rpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, UserCheck, UserX, Hourglass } from "lucide-react";
+import { Users, Clock, UserCheck, UserX, Hourglass, CheckCircle2, HelpCircle } from "lucide-react";
 import type { AnalyticsSummary } from "@/lib/types";
 
 export default function AnalyticsPage() {
@@ -22,8 +22,10 @@ export default function AnalyticsPage() {
     { label: "Belum Interview", value: data.waiting, icon: Hourglass, color: "text-amber-600" },
     { label: "Sesi 1", value: data.in_session_1, icon: Users, color: "text-blue-600" },
     { label: "Sesi 2", value: data.in_session_2, icon: Users, color: "text-purple-600" },
+    { label: "Pertimbangan", value: data.pending, icon: HelpCircle, color: "text-amber-500" },
     { label: "Lolos", value: data.passed, icon: UserCheck, color: "text-emerald-600" },
     { label: "Tidak Lolos", value: data.failed, icon: UserX, color: "text-rose-600" },
+    { label: "Selesai", value: data.finished, icon: CheckCircle2, color: "text-zinc-400" },
   ];
 
   return (
@@ -33,7 +35,7 @@ export default function AnalyticsPage() {
         <p className="text-sm text-zinc-500">Ringkasan data recruitment hari ini</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label} className="rounded-2xl">
             <CardHeader className="pb-2">
