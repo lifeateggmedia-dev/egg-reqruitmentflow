@@ -57,6 +57,9 @@ export function CheckInForm({ outlets }: CheckInFormProps) {
     defaultValues: { outlet_id: outlets[0]?.id ?? "", notes: "", email: "" },
   });
 
+  const selectedOutletId = watch("outlet_id");
+  const selectedOutletName = outlets.find((o) => o.id === selectedOutletId)?.name;
+
   const onSubmit = async (values: CheckInValues) => {
     if (!photoUrl) {
       toast.error("Foto wajib diambil menggunakan kamera");
@@ -122,7 +125,9 @@ export function CheckInForm({ outlets }: CheckInFormProps) {
           onValueChange={(v) => v && setValue("outlet_id", v)}
         >
           <SelectTrigger className="rounded-xl">
-            <SelectValue placeholder="Pilih outlet" />
+            <SelectValue placeholder="Pilih outlet">
+              {selectedOutletName ?? "Pilih outlet"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {outlets.map((o) => (
