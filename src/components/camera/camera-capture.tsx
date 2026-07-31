@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useState } from "react";
-import { Camera, RefreshCw, X } from "lucide-react";
+import { Camera, RefreshCw, X, CameraIcon } from "lucide-react";
 
 interface CameraCaptureProps {
   onCapture: (blob: Blob) => void;
@@ -14,15 +14,20 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [captured, setCaptured] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (facing: "user" | "environment") => {
     setLoading(true);
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+    }
     try {
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
       setStream(s);
+      setFacingMode(facing);
       if (videoRef.current) {
         videoRef.current.srcObject = s;
         await videoRef.current.play();
@@ -44,6 +49,11 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
       setLoading(false);
     }
   }, [onError]);
+
+  const flipCamera = useCallback(() => {
+    const next = facingMode === "user" ? "environment" : "user";
+    startCamera(next);
+  }, [facingMode, startCamera]);
 
   const capture = useCallback(() => {
     const video = videoRef.current;
@@ -119,22 +129,24 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
 
   if (!stream) {
     return (
-      <button
-        type="button"
-        onClick={startCamera}
-        disabled={loading}
-        className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 transition-colors hover:border-zinc-400 hover:bg-zinc-100 disabled:opacity-50"
-      >
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200">
-          <Camera className="h-6 w-6 text-zinc-600" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-zinc-700">
-            {loading ? "Mengakses kamera..." : "Buka Kamera"}
-          </p>
-          <p className="text-xs text-zinc-400 mt-1">Foto wajib menggunakan kamera</p>
-        </div>
-      </button>
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => startCamera("environment")}
+          disabled={loading}
+          className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 transition-colors hover:border-zinc-400 hover:bg-zinc-100 disabled:opacity-50"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200">
+            <Camera className="h-6 w-6 text-zinc-600" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-zinc-700">
+              {loading ? "Mengakses kamera..." : "Buka Kamera"}
+            </p>
+            <p className="text-xs text-zinc-400 mt-1">Foto wajib menggunakan kamera</p>
+          </div>
+        </button>
+      </div>
     );
   }
 
@@ -153,6 +165,13 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
         className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
       >
         <X className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={flipCamera}
+        className="absolute top-3 left-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
+      >
+        <CameraIcon className="h-4 w-4" />
       </button>
       <div className="absolute bottom-3 left-0 right-0 flex justify-center">
         <button
