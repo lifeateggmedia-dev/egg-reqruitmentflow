@@ -11,28 +11,33 @@ interface CameraCaptureProps {
 export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [streamActive, setStreamActive] = useState(false);
   const [captured, setCaptured] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
 
+  const stopStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setStreamActive(false);
+  }, []);
+
   const startCamera = useCallback(async (facing: "user" | "environment") => {
     setLoading(true);
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-    }
+    stopStream();
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
-      setStream(s);
+      streamRef.current = s;
       setFacingMode(facing);
-      if (videoRef.current) {
-        videoRef.current.srcObject = s;
-        await videoRef.current.play();
-      }
+      setStreamActive(true);
     } catch (err) {
+      setStreamActive(false);
       const e = err as DOMException;
       if (e.name === "NotAllowedError") {
         onError("Izin kamera ditolak. Buka ikon gembok di address bar > izinkan kamera.");
@@ -48,7 +53,7 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
     } finally {
       setLoading(false);
     }
-  }, [onError]);
+  }, [onError, stopStream]);
 
   const flipCamera = useCallback(() => {
     const next = facingMode === "user" ? "environment" : "user";
@@ -86,14 +91,7 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
       "image/jpeg",
       0.8
     );
-  }, [onCapture]);
-
-  const stopStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      setStream(null);
-    }
-  }, [stream]);
+  }, [onCapture, stopStream]);
 
   const close = useCallback(() => {
     stopStream();
@@ -127,33 +125,37 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
     );
   }
 
-  if (!stream) {
+  if (!streamActive) {
     return (
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => startCamera("environment")}
-          disabled={loading}
-          className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 transition-colors hover:border-zinc-400 hover:bg-zinc-100 disabled:opacity-50"
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200">
-            <Camera className="h-6 w-6 text-zinc-600" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-zinc-700">
-              {loading ? "Mengakses kamera..." : "Buka Kamera"}
-            </p>
-            <p className="text-xs text-zinc-400 mt-1">Foto wajib menggunakan kamera</p>
-          </div>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => startCamera("environment")}
+        disabled={loading}
+        className="flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 transition-colors hover:border-zinc-400 hover:bg-zinc-100 disabled:opacity-50"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200">
+          <Camera className="h-6 w-6 text-zinc-600" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium text-zinc-700">
+            {loading ? "Mengakses kamera..." : "Buka Kamera"}
+          </p>
+          <p className="text-xs text-zinc-400 mt-1">Foto wajib menggunakan kamera</p>
+        </div>
+      </button>
     );
   }
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-black">
       <video
-        ref={videoRef}
+        ref={(el) => {
+          videoRef.current = el;
+          if (el && streamRef.current) {
+            el.srcObject = streamRef.current;
+            el.play().catch(() => {});
+          }
+        }}
         autoPlay
         playsInline
         muted
