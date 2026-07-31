@@ -21,7 +21,15 @@ export async function checkInCandidate(
     notes?: string;
   }
 ): Promise<RpcResponse<Candidate>> {
-  const { data, error } = await supabase.rpc("check_in_candidate", params).single();
+  const { data, error } = await supabase.rpc("check_in_candidate", {
+    p_full_name: params.full_name,
+    p_email: params.email,
+    p_phone: params.phone,
+    p_position: params.position,
+    p_photo_url: params.photo_url,
+    p_outlet_id: params.outlet_id,
+    p_notes: params.notes ?? null,
+  }).single();
   return { data, error: error ? parseRpcError(error) : null };
 }
 
