@@ -30,11 +30,15 @@ export function CameraCapture({ onCapture, onError }: CameraCaptureProps) {
     } catch (err) {
       const e = err as DOMException;
       if (e.name === "NotAllowedError") {
-        onError("Izin kamera ditolak. Buka pengaturan browser untuk mengizinkan kamera.");
+        onError("Izin kamera ditolak. Buka ikon gembok di address bar > izinkan kamera.");
       } else if (e.name === "NotFoundError") {
         onError("Kamera tidak ditemukan. Pastikan perangkat memiliki kamera.");
+      } else if (e.name === "NotReadableError") {
+        onError("Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi yang memakai kamera.");
+      } else if (e.name === "OverconstrainedError") {
+        onError("Spesifikasi kamera tidak didukung. Coba ganti kamera atau perangkat.");
       } else {
-        onError("Gagal mengakses kamera. Pastikan menggunakan HTTPS.");
+        onError(`Gagal mengakses kamera (${e.name}). Coba reload halaman atau gunakan perangkat lain.`);
       }
     } finally {
       setLoading(false);
