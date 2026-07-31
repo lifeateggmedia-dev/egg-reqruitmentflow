@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { transitionCandidateStatus } from "@/lib/supabase/rpc";
@@ -21,53 +21,79 @@ const BUTTON_OVERRIDES: Partial<Record<CandidateStatus, string>> = {
   failed: "Selesai",
 };
 
-// Transitions that should show the assessment dialog
-const ASSESSMENT_TRANSITIONS: CandidateStatus[] = [
-  "call_session_2", // Interviewer 1 → Session 2
-  "passed",         // Owner → Lolos
-  "failed",         // Owner → Tidak Lolos
-];
+const SESSION_2_DECISIONS: CandidateStatus[] = ["pending", "passed", "failed"];
 
 export function ActionButtons({ candidate, role }: ActionButtonsProps) {
-  const [loading, setLoading] = useState<CandidateStatus | null>(null);
-  const [dialogTransition, setDialogTransition] = useState<CandidateStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [assessmentOpen, setAssessmentOpen] = useState(false);
   const transitions = allowedTransitions(role, candidate.current_status);
 
-  if (transitions.length === 0) return null;
+  const assessmentSession = useMemo(() => {
+    if (role === "interviewer_1" && transitions.includes("call_session_2")) {
+      return "session_1" as const;
+    }
+    if (role === "owner" && SESSION_2_DECISIONS.some((s) => transitions.includes(s))) {
+      return "session_2" as const;
+    }
+    return null;
+  }, [role, transitions]);
+
+  const isSession2Decision = assessmentSession === "session_2";
+
+  const directTransitions = isSession2Decision
+    ? []
+    : transitions.filter((t) => t !== "call_session_2");
 
   const handleTransition = async (to: CandidateStatus, note?: string) => {
-    setLoading(to);
+    setLoading(true);
     const supabase = createClient();
     const { error } = await transitionCandidateStatus(supabase, candidate.id, to, note);
-    setLoading(null);
+    setLoading(false);
     if (error) {
       toast.error(error);
     } else {
       toast.success(`Status: ${STATUS_META[to].label}`);
-      setDialogTransition(null);
+      setAssessmentOpen(false);
     }
   };
 
-  const onButtonClick = (to: CandidateStatus) => {
-    if (ASSESSMENT_TRANSITIONS.includes(to)) {
-      setDialogTransition(to);
-    } else {
-      handleTransition(to);
-    }
+  const handleAssessmentSubmit = (note: string, decision: CandidateStatus) => {
+    handleTransition(decision, note);
   };
+
+  if (transitions.length === 0) return null;
 
   return (
     <>
       <div className="flex gap-1.5">
-        {transitions.map((to) => {
+        {isSession2Decision && (
+          <button
+            onClick={() => setAssessmentOpen(true)}
+            disabled={loading}
+            className="inline-flex items-center rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {loading ? "..." : "Putuskan"}
+          </button>
+        )}
+
+        {assessmentSession === "session_1" && (
+          <button
+            onClick={() => setAssessmentOpen(true)}
+            disabled={loading}
+            className="inline-flex items-center rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {loading ? "..." : "Kirim ke Session 2"}
+          </button>
+        )}
+
+        {directTransitions.map((to) => {
           const meta = STATUS_META[to];
           const label = BUTTON_OVERRIDES[to] ?? meta.label;
-          const isLoading = loading === to;
           return (
             <button
               key={to}
-              onClick={() => onButtonClick(to)}
-              disabled={!!loading}
+              onClick={() => handleTransition(to)}
+              disabled={loading}
               className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                 to === "passed"
                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -76,20 +102,21 @@ export function ActionButtons({ candidate, role }: ActionButtonsProps) {
                     : "bg-zinc-900 text-white hover:bg-zinc-800"
               }`}
             >
-              {isLoading ? "..." : label}
+              {label}
             </button>
           );
         })}
       </div>
 
-      {dialogTransition && (
+      {assessmentOpen && (
         <AssessmentDialog
-          open={!!dialogTransition}
-          onOpenChange={(open) => !open && setDialogTransition(null)}
+          open={assessmentOpen}
+          onOpenChange={(open) => !open && setAssessmentOpen(false)}
           candidate={candidate}
-          targetStatus={dialogTransition}
-          loading={loading === dialogTransition}
-          onSubmit={(note) => handleTransition(dialogTransition, note)}
+          targetStatus={assessmentSession === "session_1" ? "call_session_2" : "session_2"}
+          session={assessmentSession!}
+          loading={loading}
+          onSubmit={handleAssessmentSubmit}
         />
       )}
     </>

@@ -6,6 +6,7 @@ export type CandidateStatus =
   | "session_1"
   | "call_session_2"
   | "session_2"
+  | "pending"
   | "passed"
   | "failed"
   | "finished";

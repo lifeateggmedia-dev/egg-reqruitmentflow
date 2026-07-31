@@ -7,7 +7,7 @@ import { CandidateGrid } from "@/components/candidates/candidate-grid";
 function Session2Content() {
   const { profile } = useUser();
   const candidates = useCandidates((c) =>
-    ["call_session_2", "session_2"].includes(c.current_status)
+    ["call_session_2", "session_2", "pending"].includes(c.current_status)
   );
 
   return (
