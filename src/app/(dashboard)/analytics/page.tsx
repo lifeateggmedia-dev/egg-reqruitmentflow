@@ -1,0 +1,67 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { getAnalyticsSummary } from "@/lib/supabase/rpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Clock, UserCheck, UserX, Hourglass } from "lucide-react";
+import type { AnalyticsSummary } from "@/lib/types";
+
+export default function AnalyticsPage() {
+  const [data, setData] = useState<AnalyticsSummary | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    getAnalyticsSummary(supabase).then(({ data }) => setData(data));
+  }, []);
+
+  if (!data) return null;
+
+  const stats = [
+    { label: "Hadir Hari Ini", value: data.total_today, icon: Users, color: "text-zinc-900" },
+    { label: "Belum Interview", value: data.waiting, icon: Hourglass, color: "text-amber-600" },
+    { label: "Sesi 1", value: data.in_session_1, icon: Users, color: "text-blue-600" },
+    { label: "Sesi 2", value: data.in_session_2, icon: Users, color: "text-purple-600" },
+    { label: "Lolos", value: data.passed, icon: UserCheck, color: "text-emerald-600" },
+    { label: "Tidak Lolos", value: data.failed, icon: UserX, color: "text-rose-600" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">Analitik</h1>
+        <p className="text-sm text-zinc-500">Ringkasan data recruitment hari ini</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {stats.map((s) => (
+          <Card key={s.label} className="rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-zinc-500 flex items-center gap-2">
+                <s.icon className={`h-4 w-4 ${s.color}`} />
+                {s.label}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-zinc-500 flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Rata-rata Waktu Tunggu
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold text-zinc-900">
+            {data.avg_wait_minutes} <span className="text-lg font-normal text-zinc-400">menit</span>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
