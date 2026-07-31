@@ -116,7 +116,7 @@ export function AssessmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl">
+      <DialogContent className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
             {session === "session_1" ? "Penilaian Sesi 1" : "Keputusan Sesi 2"} — {candidate.full_name}
@@ -128,7 +128,7 @@ export function AssessmentDialog({
 
         <div className="space-y-5">
           {/* Q&A List */}
-          <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
             {qas.map((qa) => (
               <div key={qa.id} className="space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
@@ -150,7 +150,7 @@ export function AssessmentDialog({
                   onChange={(e) => updateAnswer(qa.id, e.target.value)}
                   placeholder="Tulis jawaban..."
                   className="rounded-xl text-sm"
-                  rows={2}
+                  rows={3}
                 />
               </div>
             ))}
