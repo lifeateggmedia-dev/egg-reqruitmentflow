@@ -35,14 +35,19 @@ export function PhotoUpload({ onUploaded }: PhotoUploadProps) {
 
         const { uploadUrl, objectUrl } = await presignRes.json();
 
-        const uploadRes = await fetch(uploadUrl, {
-          method: "PUT",
-          body: blob,
-          headers: { "Content-Type": "image/jpeg" },
-        });
+        let uploadRes: Response;
+        try {
+          uploadRes = await fetch(uploadUrl, {
+            method: "PUT",
+            body: blob,
+            headers: { "Content-Type": "image/jpeg" },
+          });
+        } catch {
+          throw new Error("Gagal upload ke storage (CORS atau jaringan). Cek CORS bucket R2.");
+        }
 
         if (!uploadRes.ok) {
-          throw new Error("Gagal mengupload foto");
+          throw new Error(`Gagal upload foto (${uploadRes.status})`);
         }
 
         onUploaded(objectUrl);
